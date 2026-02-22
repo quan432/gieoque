@@ -637,9 +637,15 @@
   .sbt-tab-panel.active { display: flex; }
 
   /* INPUT PANEL */
-  .sbt-input-area { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 14px 20px; overflow: hidden; }
+  .sbt-input-area {
+    flex: 1; display: flex; flex-direction: column; gap: 10px;
+    padding: 14px 20px; overflow-y: auto; min-height: 0;
+  }
+  .sbt-input-area::-webkit-scrollbar { width: 6px; }
+  .sbt-input-area::-webkit-scrollbar-track { background: rgba(30,60,139,0.08); }
+  .sbt-input-area::-webkit-scrollbar-thumb { background: #4466bb; border-radius: 3px; }
   .sbt-textarea {
-    flex: 1; resize: none; min-height: 200px;
+    flex: 1; resize: vertical; min-height: 200px;
     background: rgba(255,255,255,0.55); border: 1px solid rgba(30,60,139,0.3);
     border-radius: 6px; padding: 12px 14px;
     font-family: 'Philosopher', serif; font-size: 13px;
@@ -749,6 +755,7 @@
           <strong>Câu hỏi:</strong> "Câu 1:", "Câu 1.", "1." &nbsp;|&nbsp; <strong>Đáp án A/B/C/D:</strong> mỗi dòng riêng <em>hoặc</em> cách nhau bằng khoảng trắng &nbsp;|&nbsp; <strong>Đáp án đúng:</strong> "Đáp án: A"
         </div>
         <textarea class="sbt-textarea" id="sbtRawText" placeholder="Dán nội dung bài tập trắc nghiệm vào đây...&#10;&#10;Ví dụ:&#10;Câu 1. Thủ đô của Việt Nam là gì?&#10;A. Hà Nội&#10;B. Hồ Chí Minh&#10;C. Đà Nẵng&#10;D. Huế&#10;Đáp án: A&#10;&#10;Câu 2. Sông dài nhất VN?&#10;A. Sông Hồng  B. Sông Mekong  C. Sông Đà  D. Sông Mã"></textarea>
+
         <button class="sbt-parse-btn" onclick="parseBaiTap()">⚡ Phân Tích Dữ Liệu</button>
         <div class="sbt-parse-result" id="sbtParseResult"></div>
       </div>
@@ -1100,9 +1107,11 @@ function updateSbtStat() {
 
 // ── SMART PARSER ──
 async function parseBaiTap() {
-  const raw = document.getElementById('sbtRawText').value;
+  const raw = document.getElementById('sbtRawText').value.trim();
   const resultEl = document.getElementById('sbtParseResult');
-  if (!raw.trim()) { resultEl.textContent = '⚠️ Vui lòng dán nội dung trước!'; return; }
+  const ansMap = {};
+
+  if (!raw) { resultEl.textContent = '⚠️ Vui lòng dán nội dung trước!'; return; }
 
   const parsed = [];
   const qStartRe   = /^(?:Câu\s*)?(\d+)[.:)]\s*(.+)/i;
@@ -1225,7 +1234,7 @@ async function parseBaiTap() {
       }
     }
 
-    if (qText) parsed.push({ q: qText.trim(), opts, correct });
+    if (qText) parsed.push({ q: qText.trim(), opts, correct, qNum });
   }
 
   if (parsed.length === 0) {
@@ -1235,11 +1244,21 @@ async function parseBaiTap() {
   }
 
   // Merge vào kho (tránh trùng)
-  let added = 0;
-  for (const p of parsed) {
-    const dup = khoBaiTap.some(k => k.q.trim().toLowerCase() === p.q.trim().toLowerCase());
-    if (!dup) { khoBaiTap.push(p); added++; }
+  let added = 0, updated = 0;
+  for (let pi = 0; pi < parsed.length; pi++) {
+    const p = parsed[pi];
+    const idx = khoBaiTap.findIndex(k =>
+      k.q.trim().toLowerCase() === p.q.trim().toLowerCase()
+    );
+    if (idx !== -1) {
+      const old = khoBaiTap[idx];
+      const changed = JSON.stringify(old.opts) !== JSON.stringify(p.opts) || old.correct !== p.correct;
+      if (changed) { khoBaiTap[idx] = p; updated++; }
+    } else {
+      khoBaiTap.push(p); added++;
+    }
   }
+
   const btn = document.querySelector('.sbt-parse-btn');
   btn.textContent = '⏳ Đang lưu...';
   await saveKhoToStorage();
@@ -1247,7 +1266,11 @@ async function parseBaiTap() {
   updateSbtStat();
   renderQList();
   resultEl.style.color = '#005500';
-  resultEl.textContent = '✅ Phân tích xong! Tìm thấy ' + parsed.length + ' câu, thêm mới ' + added + ' câu vào kho.';
+  const parts = [];
+  if (added > 0) parts.push('thêm mới ' + added + ' câu');
+  if (updated > 0) parts.push('cập nhật ' + updated + ' câu');
+  if (parts.length === 0) parts.push('không có thay đổi');
+  resultEl.textContent = '✅ Xong! Tìm thấy ' + parsed.length + ' câu — ' + parts.join(', ') + '.';
   setTimeout(() => { switchSbtTab(1); }, 800);
 }
 
@@ -1270,7 +1293,6 @@ function renderQList() {
     const card = document.createElement('div');
     card.className = 'sbt-q-card';
 
-    // Nút xoá — dùng addEventListener để tránh lỗi scope inline onclick
     const delBtn = document.createElement('div');
     delBtn.className = 'sbt-q-del';
     delBtn.title = 'Xoá câu này';
@@ -1281,12 +1303,12 @@ function renderQList() {
     });
 
     const optsHtml = q.opts.map(o =>
-      '<div class="sbt-q-opt' + (q.correct && o.letter===q.correct ? ' correct' : '') + '">' + o.letter + '. ' + o.text + '</div>'
+      '<div class="sbt-q-opt' + (q.correct && o.letter.toUpperCase() === q.correct.toUpperCase() ? ' correct' : '') + '">' + o.letter + '. ' + o.text + '</div>'
     ).join('');
 
     const inner = document.createElement('div');
     inner.innerHTML =
-      '<div class="sbt-q-num">CÂU ' + (idx+1) + (q.correct ? ' · Đáp án: '+q.correct : ' · (Chưa có đáp án)') + '</div>' +
+      '<div class="sbt-q-num">CÂU ' + (idx+1) + ' · ' + (q.correct ? 'Đáp án: <strong style="color:#006622">' + q.correct + '</strong>' : '<span style="color:#888">Chưa có đáp án</span>') + '</div>' +
       '<div class="sbt-q-text">' + q.q + '</div>' +
       '<div class="sbt-q-opts">' + (optsHtml || '<span style="font-size:11px;color:#888;font-style:italic;">Không có đáp án</span>') + '</div>';
 
