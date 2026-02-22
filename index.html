@@ -1051,13 +1051,17 @@ let khoBaiTap = [];
 async function loadKhoFromStorage() {
   try {
     const result = await window.storage.get(SBT_KEY, true);
-    if (result && result.value) khoBaiTap = JSON.parse(result.value);
-    else khoBaiTap = [];
-  } catch(e) { khoBaiTap = []; }
+    if (result && result.value) {
+      const parsed = JSON.parse(result.value);
+      if (Array.isArray(parsed)) khoBaiTap = parsed;
+    }
+  } catch(e) { /* giữ nguyên khoBaiTap hiện tại nếu lỗi */ }
 }
 
 async function saveKhoToStorage() {
-  try { await window.storage.set(SBT_KEY, JSON.stringify(khoBaiTap), true); } catch(e) {}
+  try {
+    await window.storage.set(SBT_KEY, JSON.stringify(khoBaiTap), true);
+  } catch(e) { console.error('Save kho error:', e); }
 }
 
 function switchSbtTab(idx) {
@@ -1241,6 +1245,7 @@ async function parseBaiTap() {
   await saveKhoToStorage();
   btn.textContent = '⚡ Phân Tích Dữ Liệu';
   updateSbtStat();
+  renderQList();
   resultEl.style.color = '#005500';
   resultEl.textContent = '✅ Phân tích xong! Tìm thấy ' + parsed.length + ' câu, thêm mới ' + added + ' câu vào kho.';
   setTimeout(() => { switchSbtTab(1); }, 800);
@@ -1306,8 +1311,8 @@ async function pickRandom3Questions() {
 
 // Init: load shared storage on page load
 (async () => {
-  await loadSoFromStorage();
-  await loadKhoFromStorage();
+  try { await loadSoFromStorage(); } catch(e) {}
+  try { await loadKhoFromStorage(); } catch(e) {}
 })();
 
 // ── PICK RANDOM NAME ──
