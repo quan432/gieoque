@@ -745,7 +745,7 @@
           ✦ Dán nội dung trắc nghiệm vào đây. Mỗi câu hỏi <strong>cách nhau bằng 1 dòng trắng</strong>.<br>
           <strong>Câu hỏi:</strong> "Câu 1:", "Câu 1.", "1." &nbsp;|&nbsp; <strong>Đáp án A/B/C/D:</strong> mỗi dòng riêng <em>hoặc</em> cách nhau bằng khoảng trắng &nbsp;|&nbsp; <strong>Đáp án đúng:</strong> "Đáp án: A"
         </div>
-        <textarea class="sbt-textarea" id="sbtRawText" placeholder="Dán nội dung bài tập trắc nghiệm vào đây...&#10;&#10;Ví dụ định dạng dòng riêng:&#10;Câu 1. Thủ đô của Việt Nam là gì?&#10;A. Hà Nội&#10;B. Hồ Chí Minh&#10;C. Đà Nẵng&#10;D. Huế&#10;Đáp án: A&#10;&#10;Câu 2. Sông dài nhất VN?&#10;A. Sông Hồng  B. Sông Mekong  C. Sông Đà  D. Sông Mã&#10;&#10;(Mỗi câu cách nhau 1 dòng trắng)"></textarea>
+        <textarea class="sbt-textarea" id="sbtRawText" placeholder="Dán nội dung bài tập trắc nghiệm vào đây...&#10;&#10;Ví dụ:&#10;Câu 1. Thủ đô của Việt Nam là gì?&#10;A. Hà Nội&#10;B. Hồ Chí Minh&#10;C. Đà Nẵng&#10;D. Huế&#10;Đáp án: A&#10;&#10;Câu 2. Sông dài nhất VN?&#10;A. Sông Hồng  B. Sông Mekong  C. Sông Đà  D. Sông Mã"></textarea>
         <button class="sbt-parse-btn" onclick="parseBaiTap()">⚡ Phân Tích Dữ Liệu</button>
         <div class="sbt-parse-result" id="sbtParseResult"></div>
       </div>
@@ -967,29 +967,33 @@ const queData = {
 const SO_KEY = 'soThienMenh_v1';
 let soNames = Array(40).fill('');
 
-function loadSoFromStorage() {
+async function loadSoFromStorage() {
   try {
-    const saved = localStorage.getItem(SO_KEY);
-    if (saved) soNames = JSON.parse(saved);
+    const result = await window.storage.get(SO_KEY, true);
+    if (result && result.value) soNames = JSON.parse(result.value);
   } catch(e) { soNames = Array(40).fill(''); }
 }
 
-function saveSo() {
+async function saveSo() {
   const inputs = document.querySelectorAll('.so-input');
   inputs.forEach((inp, i) => { soNames[i] = inp.value.trim(); });
-  try { localStorage.setItem(SO_KEY, JSON.stringify(soNames)); } catch(e) {}
-  updateSoCount();
-  // Visual feedback
   const btn = document.querySelector('.so-save-btn');
-  btn.textContent = '✅ Đã lưu!';
+  btn.textContent = '⏳ Đang lưu...';
+  try {
+    await window.storage.set(SO_KEY, JSON.stringify(soNames), true);
+    btn.textContent = '✅ Đã lưu!';
+  } catch(e) {
+    btn.textContent = '❌ Lỗi lưu!';
+  }
+  updateSoCount();
   setTimeout(() => { btn.innerHTML = '💾 Lưu Sổ'; }, 1500);
 }
 
-function clearSo() {
-  if (!confirm('Xoá toàn bộ danh sách?')) return;
+async function clearSo() {
+  if (!confirm('Xoá toàn bộ danh sách?\n⚠️ Sẽ xoá với tất cả mọi người!')) return;
   soNames = Array(40).fill('');
   document.querySelectorAll('.so-input').forEach(inp => inp.value = '');
-  localStorage.removeItem(SO_KEY);
+  try { await window.storage.delete(SO_KEY, true); } catch(e) {}
   updateSoCount();
 }
 
@@ -1022,10 +1026,9 @@ function buildSoGrid() {
   updateSoCount();
 }
 
-function openSo() {
-  loadSoFromStorage();
+async function openSo() {
+  await loadSoFromStorage();
   buildSoGrid();
-  // Sync inputs with saved data
   document.querySelectorAll('.so-input').forEach((inp, i) => {
     inp.value = soNames[i] || '';
   });
@@ -1033,25 +1036,25 @@ function openSo() {
   document.getElementById('soThienMenhModal').classList.add('open');
 }
 
-function closeSo() {
-  // Auto-save on close
-  saveSo();
+async function closeSo() {
+  await saveSo();
   document.getElementById('soThienMenhModal').classList.remove('open');
 }
 
 // ── SỔ BÀI TẬP THÔNG MINH ──
 const SBT_KEY = 'khoBaiTap_v1';
-let khoBaiTap = []; // mảng {q, opts:[], correct: 'A'|null}
+let khoBaiTap = [];
 
-function loadKhoFromStorage() {
+async function loadKhoFromStorage() {
   try {
-    const s = localStorage.getItem(SBT_KEY);
-    if (s) khoBaiTap = JSON.parse(s);
+    const result = await window.storage.get(SBT_KEY, true);
+    if (result && result.value) khoBaiTap = JSON.parse(result.value);
+    else khoBaiTap = [];
   } catch(e) { khoBaiTap = []; }
 }
 
-function saveKhoToStorage() {
-  try { localStorage.setItem(SBT_KEY, JSON.stringify(khoBaiTap)); } catch(e) {}
+async function saveKhoToStorage() {
+  try { await window.storage.set(SBT_KEY, JSON.stringify(khoBaiTap), true); } catch(e) {}
 }
 
 function switchSbtTab(idx) {
@@ -1065,8 +1068,8 @@ function switchSbtTab(idx) {
   if (idx === 1) renderQList();
 }
 
-function openSbt() {
-  loadKhoFromStorage();
+async function openSbt() {
+  await loadKhoFromStorage();
   updateSbtStat();
   document.getElementById('soBaiTapModal').classList.add('open');
 }
@@ -1075,13 +1078,12 @@ function closeSbt() {
   document.getElementById('soBaiTapModal').classList.remove('open');
 }
 
-function clearSbt() {
-  if (!confirm('Xoá toàn bộ ngân hàng câu hỏi?\nNội dung đã dán sẽ không bị xoá.')) return;
+async function clearSbt() {
+  if (!confirm('Xoá toàn bộ ngân hàng câu hỏi?\n⚠️ Sẽ xoá với tất cả mọi người!')) return;
   khoBaiTap = [];
-  saveKhoToStorage();
+  await saveKhoToStorage();
   updateSbtStat();
   renderQList();
-  // Không xoá textarea - chỉ xoá ngân hàng câu hỏi
 }
 
 function updateSbtStat() {
@@ -1090,7 +1092,7 @@ function updateSbtStat() {
 }
 
 // ── SMART PARSER ──
-function parseBaiTap() {
+async function parseBaiTap() {
   const raw = document.getElementById('sbtRawText').value;
   const resultEl = document.getElementById('sbtParseResult');
   if (!raw.trim()) { resultEl.textContent = '⚠️ Vui lòng dán nội dung trước!'; return; }
@@ -1231,24 +1233,24 @@ function parseBaiTap() {
     const dup = khoBaiTap.some(k => k.q.trim().toLowerCase() === p.q.trim().toLowerCase());
     if (!dup) { khoBaiTap.push(p); added++; }
   }
-  saveKhoToStorage();
+  const btn = document.querySelector('.sbt-parse-btn');
+  btn.textContent = '⏳ Đang lưu...';
+  await saveKhoToStorage();
+  btn.textContent = '⚡ Phân Tích Dữ Liệu';
   updateSbtStat();
   resultEl.style.color = '#005500';
   resultEl.textContent = '✅ Phân tích xong! Tìm thấy ' + parsed.length + ' câu, thêm mới ' + added + ' câu vào kho.';
-
-  // Chuyển sang tab ngân hàng
   setTimeout(() => { switchSbtTab(1); }, 800);
 }
 
-function deleteQuestion(idx) {
+async function deleteQuestion(idx) {
   khoBaiTap.splice(idx, 1);
-  saveKhoToStorage();
+  await saveKhoToStorage();
   updateSbtStat();
   renderQList();
 }
 
 function renderQList() {
-  loadKhoFromStorage();
   const list = document.getElementById('sbtQList');
   if (!list) return;
   if (khoBaiTap.length === 0) {
@@ -1287,8 +1289,8 @@ function renderQList() {
 }
 
 // Bốc ngẫu nhiên 3 câu không trùng từ kho
-function pickRandom3Questions() {
-  loadKhoFromStorage();
+async function pickRandom3Questions() {
+  await loadKhoFromStorage();
   if (khoBaiTap.length === 0) return null;
   const pool = [...khoBaiTap];
   // Shuffle Fisher-Yates
@@ -1299,18 +1301,27 @@ function pickRandom3Questions() {
   return pool.slice(0, Math.min(3, pool.length));
 }
 
-// Load kho on start
-loadKhoFromStorage();
+// Init: load shared storage on page load
+(async () => {
+  await loadSoFromStorage();
+  await loadKhoFromStorage();
+})();
 
 // ── PICK RANDOM NAME ──
 // Pick random name from Sổ Thiên Mệnh
-function pickRandomName() {
-  loadSoFromStorage();
+async function pickRandomName() {
+  await loadSoFromStorage();
   const valid = soNames.filter(n => n.trim() !== '');
   if (valid.length === 0) {
     // Fallback to default names if Sổ is empty
-    const defaults = ['Nguyễn Văn An','Trần Thị Bích','Lê Hoàng Nam','Phạm Minh Tuấn',
-      'Hoàng Thị Thu','Vũ Đức Khải','Đặng Thị Lan','Bùi Thanh Hải'];
+    const defaults = ['Phạm Quỳnh Anh','Tạ Duy Bảo','Ma Trần Linh Chi','Nguyễn Phạm Gia Hân',
+      'Vũ Lê Nhã Hân','Nguyễn Vũ Anh Huy','Bùi Võ Nguyên Khoa','Trần Tuấn Kiệt',
+      'Nguyễn Thùy Linh','Nguyễn Hoàng Ka Ly','Lê Trí Mạnh','Nguyễn Phạm Ly Na',
+      'Lê Thiện Nhân','Nguyễn Lâm Nhật','Châu Mẫn Nhi','Nguyễn Trần Quỳnh Như',
+      'Trần Nguyễn Thanh Như','Phạm Minh Quân','Lê Văn Hoàng Quốc','Châu Trần Diệp Thanh',
+      'Bùi Trọng Thắng','Lê Nguyễn Minh Thiện','Nguyễn Ngọc Kim Thư','Đỗ Ngọc Hương Trà',
+      'Võ Ngô Kiều Trinh','Nguyễn Võ Thanh Trúc','Lê Thanh Tú','Lê Hoàng Tuấn',
+      'Võ Nhã Uyên','Nguyễn Phạm Như Ý','Phạm Ngọc Như Ý'];
     return defaults[Math.floor(Math.random() * defaults.length)];
   }
   return valid[Math.floor(Math.random() * valid.length)];
@@ -1347,7 +1358,7 @@ function rollDice() {
   }, 700);
 }
 
-function launchSticks() {
+async function launchSticks() {
   const scene = document.querySelector('.scene');
   const cup = document.getElementById('cupArea');
   const sceneRect = scene.getBoundingClientRect();
@@ -1388,8 +1399,8 @@ function launchSticks() {
     setTimeout(() => s.remove(), 1200);
   }
 
-  setTimeout(() => {
-    const chosenName = pickRandomName();
+  setTimeout(async () => {
+    const chosenName = await pickRandomName();
     const queName = pickRandomQue();
     const que = queData[queName];
     document.getElementById('resultName').textContent = chosenName;
@@ -1464,11 +1475,11 @@ let currentQ = 0, selectedOpt = -1, score = 0;
 let activeQuizData = null;
 let answers = [];
 
-function openCameraQuiz() {
+async function openCameraQuiz() {
   closeScroll();
   document.getElementById('cameraQuiz').classList.add('active');
   currentQ = 0; selectedOpt = -1; score = 0; answers = [];
-  const picked = pickRandom3Questions();
+  const picked = await pickRandom3Questions();
   if (picked && picked.length > 0) {
     activeQuizData = picked.map(q => ({
       q: q.q,
