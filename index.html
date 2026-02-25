@@ -174,39 +174,22 @@
   }
   .scroll-left-col {
     width: 100%; text-align: center;
-    border-bottom: 1px solid rgba(158,126,26,0.35);
-    padding-bottom: 10px;
   }
-  .scroll-right-col {
-    width: 100%; text-align: center;
-  }
+  .scroll-right-col { display: none; }
   .scroll-label {
     font-family:'Cinzel Decorative',serif; font-size:7px; letter-spacing:3px;
-    color:var(--gold-dark); margin-bottom:5px; text-transform:uppercase;
+    color:var(--gold-dark); margin-bottom:12px; text-transform:uppercase;
   }
   .scroll-name {
-    font-family: 'Philosopher', serif; font-size: 30px; font-weight: 700;
+    font-family: 'Philosopher', serif; font-size: 36px; font-weight: 700;
     color: var(--dark-red);
     text-shadow: 2px 2px 0 rgba(212,175,55,0.6), 0 0 12px rgba(180,0,0,0.25);
     line-height: 1.2; margin-bottom: 0; font-style: normal;
     letter-spacing: 1px;
   }
-  .scroll-que-result {
-    font-family: 'Philosopher', serif; font-size: 11px; font-style: italic;
-    color: var(--gold-dark); margin-top: 5px; letter-spacing: 1px;
-  }
-  .scroll-que-name {
-    font-family: 'Arial Black', Arial, sans-serif; font-size: 26px; font-weight: 900;
-    font-style: normal; letter-spacing: 1.5px;
-    color: var(--dark-red); text-shadow: 2px 2px 0 rgba(212,175,55,0.5);
-    line-height: 1.2; margin-bottom: 6px;
-  }
-  .scroll-sub {
-    font-family: 'Philosopher', serif;
-    font-size: 14px; color: #3a1a08;
-    line-height: 1.7; letter-spacing: 0.2px;
-    font-style: italic;
-  }
+  .scroll-que-result { display: none; }
+  .scroll-que-name { display: none; }
+  .scroll-sub { display: none; }
   .scroll-divider { display:none; }
 
   /* Nút bấm */
@@ -637,15 +620,9 @@
   .sbt-tab-panel.active { display: flex; }
 
   /* INPUT PANEL */
-  .sbt-input-area {
-    flex: 1; display: flex; flex-direction: column; gap: 10px;
-    padding: 14px 20px; overflow-y: auto; min-height: 0;
-  }
-  .sbt-input-area::-webkit-scrollbar { width: 6px; }
-  .sbt-input-area::-webkit-scrollbar-track { background: rgba(30,60,139,0.08); }
-  .sbt-input-area::-webkit-scrollbar-thumb { background: #4466bb; border-radius: 3px; }
+  .sbt-input-area { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 14px 20px; overflow: hidden; }
   .sbt-textarea {
-    flex: 1; resize: vertical; min-height: 200px;
+    flex: 1; resize: none; min-height: 200px;
     background: rgba(255,255,255,0.55); border: 1px solid rgba(30,60,139,0.3);
     border-radius: 6px; padding: 12px 14px;
     font-family: 'Philosopher', serif; font-size: 13px;
@@ -755,20 +732,24 @@
           <strong>Câu hỏi:</strong> "Câu 1:", "Câu 1.", "1." &nbsp;|&nbsp; <strong>Đáp án A/B/C/D:</strong> mỗi dòng riêng <em>hoặc</em> cách nhau bằng khoảng trắng &nbsp;|&nbsp; <strong>Đáp án đúng:</strong> "Đáp án: A"
         </div>
         <textarea class="sbt-textarea" id="sbtRawText" placeholder="Dán nội dung bài tập trắc nghiệm vào đây...&#10;&#10;Ví dụ:&#10;Câu 1. Thủ đô của Việt Nam là gì?&#10;A. Hà Nội&#10;B. Hồ Chí Minh&#10;C. Đà Nẵng&#10;D. Huế&#10;Đáp án: A&#10;&#10;Câu 2. Sông dài nhất VN?&#10;A. Sông Hồng  B. Sông Mekong  C. Sông Đà  D. Sông Mã"></textarea>
-
         <button class="sbt-parse-btn" onclick="parseBaiTap()">⚡ Phân Tích Dữ Liệu</button>
         <div class="sbt-parse-result" id="sbtParseResult"></div>
       </div>
     </div>
     <!-- Tab 1: Question bank -->
     <div class="sbt-tab-panel" id="sbtPanel1">
+      <div class="sbt-set-count-bar">
+        <label>🎯 Số câu hỏi mỗi lần thi:</label>
+        <input class="sbt-count-input" type="number" id="quizCountInput" min="1" max="5" value="3" onchange="saveQuizCount()">
+        <span class="sbt-count-hint">(từ 1 đến 5 câu)</span>
+      </div>
       <div class="sbt-qlist" id="sbtQList">
         <div style="text-align:center;color:rgba(26,58,106,0.4);font-style:italic;padding:40px 0;">Chưa có câu hỏi nào. Hãy dán nội dung và phân tích!</div>
       </div>
     </div>
     <div class="sbt-footer">
       <span class="sbt-stat" id="sbtStat">0 câu hỏi trong kho</span>
-      <button class="sbt-clear-btn" id="sbtClearBtn" onclick="clearSbt()" style="display:none;">🗑 Xoá kho</button>
+      <button class="sbt-clear-btn" id="sbtClearBtn" onclick="clearSbt()">🗑 Xoá kho</button>
     </div>
   </div>
 </div>
@@ -911,12 +892,7 @@
     </div>
     <div class="quiz-body">
       <div class="quiz-side">
-        <div class="quiz-progress">
-          <div class="progress-dot active" id="dot0"></div>
-          <div class="progress-dot" id="dot1"></div>
-          <div class="progress-dot" id="dot2"></div>
-          <span style="margin-left:6px;font-size:10px;color:var(--gold-dark);letter-spacing:2px;">CÂU HỎI</span>
-        </div>
+        <div class="quiz-progress"></div>
         <div class="quiz-question-box">
           <div class="quiz-q-num" id="qNum">CÂU 1 / 3</div>
           <div class="quiz-q-text" id="qText">Đang tải câu hỏi...</div>
@@ -1053,7 +1029,9 @@ async function closeSo() {
 
 // ── SỔ BÀI TẬP THÔNG MINH ──
 const SBT_KEY = 'khoBaiTap_v1';
+const SBT_COUNT_KEY = 'quizCount_v1';
 let khoBaiTap = [];
+let quizCount = 3; // mặc định 3 câu
 
 async function loadKhoFromStorage() {
   try {
@@ -1062,7 +1040,26 @@ async function loadKhoFromStorage() {
       const parsed = JSON.parse(result.value);
       if (Array.isArray(parsed)) khoBaiTap = parsed;
     }
-  } catch(e) { /* giữ nguyên khoBaiTap hiện tại nếu lỗi */ }
+  } catch(e) {}
+  // Load quiz count
+  try {
+    const r2 = await window.storage.get(SBT_COUNT_KEY, true);
+    if (r2 && r2.value) {
+      const n = parseInt(r2.value);
+      if (n >= 1 && n <= 5) quizCount = n;
+    }
+  } catch(e) {}
+}
+
+async function saveQuizCount() {
+  const inp = document.getElementById('quizCountInput');
+  if (!inp) return;
+  let val = parseInt(inp.value);
+  if (isNaN(val) || val < 1) val = 1;
+  if (val > 5) val = 5;
+  inp.value = val;
+  quizCount = val;
+  try { await window.storage.set(SBT_COUNT_KEY, String(val), true); } catch(e) {}
 }
 
 async function saveKhoToStorage() {
@@ -1076,14 +1073,14 @@ function switchSbtTab(idx) {
     document.getElementById('sbtTab'+i).classList.toggle('active', i===idx);
     document.getElementById('sbtPanel'+i).classList.toggle('active', i===idx);
   });
-  // Chỉ hiện nút Xoá kho khi ở tab Ngân Hàng Câu Hỏi
-  const clearBtn = document.getElementById('sbtClearBtn');
-  if (clearBtn) clearBtn.style.display = idx === 1 ? 'inline-block' : 'none';
   if (idx === 1) renderQList();
 }
 
 async function openSbt() {
   await loadKhoFromStorage();
+  // Sync input với giá trị đã lưu
+  const inp = document.getElementById('quizCountInput');
+  if (inp) inp.value = quizCount;
   updateSbtStat();
   document.getElementById('soBaiTapModal').classList.add('open');
 }
@@ -1107,11 +1104,9 @@ function updateSbtStat() {
 
 // ── SMART PARSER ──
 async function parseBaiTap() {
-  const raw = document.getElementById('sbtRawText').value.trim();
+  const raw = document.getElementById('sbtRawText').value;
   const resultEl = document.getElementById('sbtParseResult');
-  const ansMap = {};
-
-  if (!raw) { resultEl.textContent = '⚠️ Vui lòng dán nội dung trước!'; return; }
+  if (!raw.trim()) { resultEl.textContent = '⚠️ Vui lòng dán nội dung trước!'; return; }
 
   const parsed = [];
   const qStartRe   = /^(?:Câu\s*)?(\d+)[.:)]\s*(.+)/i;
@@ -1147,9 +1142,8 @@ async function parseBaiTap() {
     const isSingle  = !!t.match(singleLetterRe);
     const isBlank   = t === '';
 
-    // Nếu đã kết thúc block (có đáp án D hoặc dòng đáp án đúng hoặc chữ đơn lẻ)
-    // và dòng tiếp theo là câu hỏi mới → flush ngay
-    if ((hasOptD || hasAnswerLine) && isNewQ) {
+    // Flush khi gặp câu hỏi mới và block hiện tại đã có nội dung
+    if (isNewQ && cur.length > 0) {
       flushBlock();
     }
     // Dòng trắng + dòng sau là câu mới → flush
@@ -1158,11 +1152,18 @@ async function parseBaiTap() {
       if (nextLine.match(qStartRe)) { flushBlock(); continue; }
     }
 
+    // Nếu là chữ đơn lẻ (đáp án đúng) sau khi đã có đáp án D → thêm rồi flush ngay
+    if (isSingle && hasOptD && !isNewQ) {
+      cur.push(t);
+      flushBlock();
+      continue;
+    }
+
     if (t) cur.push(t);
 
     // Đánh dấu trạng thái block
     if (isOptD) hasOptD = true;
-    if (isAnsLine || (isSingle && hasOptD)) hasAnswerLine = true;
+    if (isAnsLine) hasAnswerLine = true;
   }
   flushBlock(); // flush block cuối
 
@@ -1234,7 +1235,7 @@ async function parseBaiTap() {
       }
     }
 
-    if (qText) parsed.push({ q: qText.trim(), opts, correct, qNum });
+    if (qText) parsed.push({ q: qText.trim(), opts, correct });
   }
 
   if (parsed.length === 0) {
@@ -1245,20 +1246,27 @@ async function parseBaiTap() {
 
   // Merge vào kho (tránh trùng)
   let added = 0, updated = 0;
-  for (let pi = 0; pi < parsed.length; pi++) {
-    const p = parsed[pi];
-    const idx = khoBaiTap.findIndex(k =>
-      k.q.trim().toLowerCase() === p.q.trim().toLowerCase()
-    );
-    if (idx !== -1) {
-      const old = khoBaiTap[idx];
-      const changed = JSON.stringify(old.opts) !== JSON.stringify(p.opts) || old.correct !== p.correct;
-      if (changed) { khoBaiTap[idx] = p; updated++; }
+  for (const p of parsed) {
+    // Tìm theo số câu (qNum) nếu có, fallback theo nội dung câu hỏi
+    const existIdx = khoBaiTap.findIndex((k, i) => {
+      // So theo index thứ tự nếu số câu khớp
+      const qMatch = p.q.match(/^(\d+)/);
+      const kMatch = k.q.match(/^(\d+)/);
+      if (qMatch && kMatch && qMatch[1] === kMatch[1]) return true;
+      // Fallback: so nội dung gần giống (bỏ dấu câu, lowercase)
+      const normalize = s => s.toLowerCase().replace(/[^a-zàáâãèéêìíòóôõùúăđĩũơưạ-ỹ0-9]/g,' ').replace(/\s+/g,' ').trim();
+      return normalize(k.q) === normalize(p.q);
+    });
+
+    if (existIdx !== -1) {
+      // Cập nhật câu đã có
+      khoBaiTap[existIdx] = p;
+      updated++;
     } else {
-      khoBaiTap.push(p); added++;
+      khoBaiTap.push(p);
+      added++;
     }
   }
-
   const btn = document.querySelector('.sbt-parse-btn');
   btn.textContent = '⏳ Đang lưu...';
   await saveKhoToStorage();
@@ -1266,11 +1274,10 @@ async function parseBaiTap() {
   updateSbtStat();
   renderQList();
   resultEl.style.color = '#005500';
-  const parts = [];
-  if (added > 0) parts.push('thêm mới ' + added + ' câu');
-  if (updated > 0) parts.push('cập nhật ' + updated + ' câu');
-  if (parts.length === 0) parts.push('không có thay đổi');
-  resultEl.textContent = '✅ Xong! Tìm thấy ' + parsed.length + ' câu — ' + parts.join(', ') + '.';
+  const msg = [];
+  if (added > 0) msg.push('thêm mới ' + added + ' câu');
+  if (updated > 0) msg.push('cập nhật ' + updated + ' câu');
+  resultEl.textContent = '✅ Tìm thấy ' + parsed.length + ' câu — ' + (msg.join(', ') || 'không có thay đổi') + '.';
   setTimeout(() => { switchSbtTab(1); }, 800);
 }
 
@@ -1293,6 +1300,7 @@ function renderQList() {
     const card = document.createElement('div');
     card.className = 'sbt-q-card';
 
+    // Nút xoá — dùng addEventListener để tránh lỗi scope inline onclick
     const delBtn = document.createElement('div');
     delBtn.className = 'sbt-q-del';
     delBtn.title = 'Xoá câu này';
@@ -1303,12 +1311,12 @@ function renderQList() {
     });
 
     const optsHtml = q.opts.map(o =>
-      '<div class="sbt-q-opt' + (q.correct && o.letter.toUpperCase() === q.correct.toUpperCase() ? ' correct' : '') + '">' + o.letter + '. ' + o.text + '</div>'
+      '<div class="sbt-q-opt' + (q.correct && o.letter===q.correct ? ' correct' : '') + '">' + o.letter + '. ' + o.text + '</div>'
     ).join('');
 
     const inner = document.createElement('div');
     inner.innerHTML =
-      '<div class="sbt-q-num">CÂU ' + (idx+1) + ' · ' + (q.correct ? 'Đáp án: <strong style="color:#006622">' + q.correct + '</strong>' : '<span style="color:#888">Chưa có đáp án</span>') + '</div>' +
+      '<div class="sbt-q-num">CÂU ' + (idx+1) + (q.correct ? ' · Đáp án: '+q.correct : ' · (Chưa có đáp án)') + '</div>' +
       '<div class="sbt-q-text">' + q.q + '</div>' +
       '<div class="sbt-q-opts">' + (optsHtml || '<span style="font-size:11px;color:#888;font-style:italic;">Không có đáp án</span>') + '</div>';
 
@@ -1318,17 +1326,16 @@ function renderQList() {
   });
 }
 
-// Bốc ngẫu nhiên 3 câu không trùng từ kho
+// Bốc ngẫu nhiên N câu không trùng từ kho (N = quizCount)
 async function pickRandom3Questions() {
   await loadKhoFromStorage();
   if (khoBaiTap.length === 0) return null;
   const pool = [...khoBaiTap];
-  // Shuffle Fisher-Yates
   for (let i = pool.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i+1));
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
-  return pool.slice(0, Math.min(3, pool.length));
+  return pool.slice(0, Math.min(quizCount, pool.length));
 }
 
 // Init: load shared storage on page load
@@ -1561,20 +1568,30 @@ function restartQuiz() {
 }
 
 function loadQuestion(idx) {
-  const q = (activeQuizData || quizData)[idx];
+  const data = activeQuizData || quizData;
+  const total = data.length;
+  const q = data[idx];
   if (!q) return;
-  document.getElementById('qNum').textContent = 'CÂU ' + (idx+1) + ' / ' + (activeQuizData||quizData).length;
+  document.getElementById('qNum').textContent = 'CÂU ' + (idx+1) + ' / ' + total;
   document.getElementById('qText').textContent = q.q;
   for(let i=0;i<4;i++){
     document.getElementById('optText'+i).textContent = q.opts[i];
     document.getElementById('opt'+i).className = 'quiz-option';
   }
-  for(let i=0;i<3;i++){
-    const d = document.getElementById('dot'+i);
+  // Render progress dots động
+  const progressEl = document.querySelector('.quiz-progress');
+  progressEl.innerHTML = '';
+  for(let i=0;i<total;i++){
+    const d = document.createElement('div');
     d.className = 'progress-dot';
     if(i < idx) d.classList.add('done');
     else if(i === idx) d.classList.add('active');
+    progressEl.appendChild(d);
   }
+  const lbl = document.createElement('span');
+  lbl.style.cssText = 'margin-left:6px;font-size:10px;color:var(--gold-dark);letter-spacing:2px;';
+  lbl.textContent = 'CÂU HỎI';
+  progressEl.appendChild(lbl);
   selectedOpt = -1;
   document.getElementById('confirmBtn').disabled = false;
   document.getElementById('confirmBtn').classList.remove('ready');
